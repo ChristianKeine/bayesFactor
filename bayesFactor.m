@@ -1,6 +1,6 @@
 classdef bayesFactor < handle
     % A class to perform Bayes Factor statistical analysis to quantify
-    % evidnce in favor or against a hypothesis.
+    % evidence in favor or against a hypothesis.
     % For background see:
     %
     % The mathemetical underpinning for these routines is provided in
@@ -129,8 +129,7 @@ classdef bayesFactor < handle
                 %thisX = thisX -mean(thisX,2);
                 designMatrix{nrMainEffects+i} = thisX;
             end
-            
-            
+                   
             %% Assign groups of effects to use the same prior on effect size.
             soFar  =0;
             if isempty(sharedPriors)
@@ -219,7 +218,7 @@ classdef bayesFactor < handle
             integrand = @(varargin) (bayesFactor.rouderS(cat(1,varargin{:}),y,X,sharedPriors).*prod(prior(cat(1,varargin{:})),1));
             nrDims = numel(sharedPriors);
             if nrDims>= o.nDimsForMC
-                % Use MC Sampling to calculate the integral
+                % Use MC Sampling to calculate the integral 
                 bf10 = o.mcIntegral(integrand,prior,nrDims);
             else
                 switch (nrDims)
@@ -232,8 +231,7 @@ classdef bayesFactor < handle
                 end
             end
         end
-        
-        
+
     end
     
     %% Helper functions
@@ -466,11 +464,11 @@ classdef bayesFactor < handle
             if isempty(p.Results.stats)
                 % Calculate frequentist from the X and Y data
                 tail = p.Results.tail;
-                [~,p,CI,stats] = ttest2(X,Y,'alpha',p.Results.alpha,'tail',tail);
+                [~,pValue,CI,stats] = ttest2(X,Y,'alpha',p.Results.alpha,'tail',tail);
                 nX = numel(X);
                 nY = numel(Y);
                 statsForBf = stats;
-                statsForBf.p = p;
+                statsForBf.pValue = pValue;
                 statsForBf.N = nX*nY/(nX+nY);
                 statsForBf.df = nX+nY-2;
                 statsForBf.tail = tail;
@@ -478,13 +476,12 @@ classdef bayesFactor < handle
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
                 statsForBf = p.Results.stats;
-            end
-            
-            bf10 = bayesFactor.ttest('stats',statsForBf);
+            end            
+            bf10 = bayesFactor.ttest('stats',statsForBf,'scale',p.Results.scale);
         end
         
         
-        
+ %%       
         function [bf10,pValue,CI,stats] = ttest(X,varargin)
             % function [bf10,p,CI,stats] = ttest(X,Y,varargin)  - paired
             % function [bf10,p,CI,stats] = ttest(X,varargin)    - one sample
@@ -551,7 +548,7 @@ classdef bayesFactor < handle
                 % df.
                 T = p.Results.stats.tstat;
                 df = p.Results.stats.df;
-                pValue = p.Results.stats.p;
+                pValue = p.Results.stats.pValue;
                 tail  = p.Results.stats.tail;
                 N = p.Results.stats.N;
                 CI = [NaN NaN];
@@ -572,7 +569,7 @@ classdef bayesFactor < handle
                 case {'left','right'}
                     % Adjust the BF using hte p-value as an estimate for the posterior
                     % (Morey & Wagenmakers, Stats and Prob Letts. 92 (2014):121-124.
-                    bf10 = 2*(1-p)*bf10;
+                    bf10 = 2*(1-pValue)*bf10;
             end
         end
         
@@ -601,7 +598,7 @@ classdef bayesFactor < handle
             
         end
         
-        
+ %%       
         function [bf10,r,p] = corr(arg1,arg2)
             % Calculate the Bayes Factor for Pearson correlation between two
             % variables.
