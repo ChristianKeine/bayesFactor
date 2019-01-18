@@ -472,11 +472,11 @@ classdef bayesFactor < handle
                 % Calculate frequentist from the X and Y data
                 tail = p.Results.tail;
                 [~,pValue,CI,stats] = ttest2(X,Y,'alpha',p.Results.alpha,'tail',tail,'vartype',opt.vartype);
-                nX = numel(X);
-                nY = numel(Y);
+%                 nX = numel(X);
+%                 nY = numel(Y);
                 statsForBf = stats;
                 statsForBf.pValue = pValue;
-                statsForBf.N = nX*nY/(nX+nY);
+                %statsForBf.N = nX*nY/(nX+nY);
                 statsForBf.df = stats.df;
                 statsForBf.tail = tail;
             else % does not seem to work, since the stat-output from ttest2 does not provide information about N and tail used
