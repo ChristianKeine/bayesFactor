@@ -1,8 +1,8 @@
 classdef bayesFactor < handle
     % A class to perform Bayes Factor statistical analysis to quantify
     % evidence in favor or against a hypothesis.
-    % For background see "Rouder, J. N., Speckman, P. L., Sun, D., Morey,
-    % R. D., & Iverson, G. (2009). Bayesian t tests for accepting and rejecting the null hypothesis. Psychonomic Bulletin and Review, 16(2), 225–237. https://doi.org/10.3758/PBR.16.2.225"
+    % For background see 
+   % "Rouder, J. N., Speckman, P. L., Sun, D., Morey, R. D., & Iverson, G. (2009). Bayesian t tests for accepting and rejecting the null hypothesis. Psychonomic Bulletin and Review, 16(2), 225–237. https://doi.org/10.3758/PBR.16.2.225"
     %
     % The mathemetical underpinning for these routines is provided in
     %
@@ -11,6 +11,8 @@ classdef bayesFactor < handle
     %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
     % BK - 2018
+    % LINK TO ORIGINAL IMPLEMENTATION BY 
+    
     
     properties (SetAccess = public, GetAccess =public)
         %% Default parameters for the Monte Carlo integration.
