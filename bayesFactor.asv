@@ -11,6 +11,8 @@ classdef bayesFactor < handle
     %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
     % BK - 2018
+    % LINK TO ORIGINAL MATLAB IMPLEMENTATION: https://github.com/klabhub/bayesFactor 
+    
     
     properties (SetAccess = public, GetAccess =public)
         %% Default parameters for the Monte Carlo integration.
@@ -456,23 +458,26 @@ classdef bayesFactor < handle
             end
             
             expectedVarTypes = {'equal','unequal'};
-            p=inputParser;
-            p.addParameter('alpha',0.05);
-            p.addParameter('tail','both',@(x) (ischar(x)&& ismember(upper(x),{'BOTH','RIGHT','LEFT'})));
-            p.addParameter('scale',sqrt(2)/2);
-            p.addParameter('stats',[],@isstruct);
-            p.addParameter('vartype','equal',@(x) any(validatestring(x,expectedVarTypes)));
-            p.parse(parms{:});
-            opt = p.Results;
+            expectedTail = {'both','left','right'};
             
+            P=inputParser;
+            P.addParameter('alpha',0.05);
+            P.addParameter('tail','both',(@(x) any(validatestring(x,expectedTail))));
+            P.addParameter('scale',sqrt(2)/2);
+            P.addParameter('stats',[],@isstruct);
+            P.addParameter('vartype','equal',@(x) any(validatestring(x,expectedVarTypes)));
+            P.parse(parms{:});
+            
+            opt = p.Results;
             opt.vartype = validatestring(opt.vartype,expectedVarTypes);
+            opt.tail = validatestring(opt.tail,expectedTail);
 
             
             
-            if isempty(p.Results.stats)
+            if isempty(opt.stats)
                 % Calculate frequentist from the X and Y data
                 tail = p.Results.tail;
-                [~,pValue,CI,stats] = ttest2(X,Y,'alpha',p.Results.alpha,'tail',tail,'vartype',opt.vartype);
+                [~,pValue,CI,stats] = ttest2(X,Y,'alpha',opt.alpha,'tail',tail,'vartype',opt.vartype);
                 nX = numel(X);
                 nY = numel(Y);
                 statsForBf = stats;
@@ -483,10 +488,10 @@ classdef bayesFactor < handle
             else 
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
-                statsForBf = p.Results.stats;
-                statsForBf.tail = p.Results.tail;
+                statsForBf = opt.stats;
+                statsForBf.tail = opt.tail;
             end            
-            bf10 = bayesFactor.ttest('stats',statsForBf,'scale',p.Results.scale);
+            bf10 = bayesFactor.ttest('stats',statsForBf,'scale',opt.scale);
         end
         
         

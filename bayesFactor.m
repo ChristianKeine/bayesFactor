@@ -458,37 +458,39 @@ classdef bayesFactor < handle
             end
             
             expectedVarTypes = {'equal','unequal'};
-            p=inputParser;
-            p.addParameter('alpha',0.05);
-            p.addParameter('tail','both',@(x) (ischar(x)&& ismember(upper(x),{'BOTH','RIGHT','LEFT'})));
-            p.addParameter('scale',sqrt(2)/2);
-            p.addParameter('stats',[],@isstruct);
-            p.addParameter('vartype','equal',@(x) any(validatestring(x,expectedVarTypes)));
-            p.parse(parms{:});
-            opt = p.Results;
+            expectedTail = {'both','left','right'};
             
+            P=inputParser;
+            P.addParameter('alpha',0.05);
+            P.addParameter('tail','both',@(x) any(validatestring(x,expectedTail)));
+            P.addParameter('scale',sqrt(2)/2);
+            P.addParameter('stats',[],@isstruct);
+            P.addParameter('vartype','equal',@(x) any(validatestring(x,expectedVarTypes)));
+            P.parse(parms{:});
+            
+            opt = P.Results;
             opt.vartype = validatestring(opt.vartype,expectedVarTypes);
+            opt.tail = validatestring(opt.tail,expectedTail);
 
             
             
-            if isempty(p.Results.stats)
+            if isempty(opt.stats)
                 % Calculate frequentist from the X and Y data
-                tail = p.Results.tail;
-                [~,pValue,CI,stats] = ttest2(X,Y,'alpha',p.Results.alpha,'tail',tail,'vartype',opt.vartype);
+                [~,pValue,CI,stats] = ttest2(X,Y,'alpha',opt.alpha,'tail',opt.tail,'vartype',opt.vartype);
                 nX = numel(X);
                 nY = numel(Y);
                 statsForBf = stats;
                 statsForBf.pValue = pValue;
                 statsForBf.N = nX*nY/(nX+nY);
                 statsForBf.df = stats.df;
-                statsForBf.tail = tail;
+                statsForBf.tail = opt.tail;
             else 
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
-                statsForBf = p.Results.stats;
-                statsForBf.tail = p.Results.tail;
+                statsForBf = opt.stats;
+                statsForBf.tail = opt.tail;
             end            
-            bf10 = bayesFactor.ttest('stats',statsForBf,'scale',p.Results.scale);
+            bf10 = bayesFactor.ttest('stats',statsForBf,'scale',opt.scale);
         end
         
         
@@ -539,34 +541,38 @@ classdef bayesFactor < handle
                 parms = cat(2,X,varargin);
                 X=[];Y=[];
             end
-            p=inputParser;
-            p.addParameter('alpha',0.05);
-            p.addParameter('tail','both',@(x) (ischar(x)&& ismember(upper(x),{'BOTH','RIGHT','LEFT'})));
-            p.addParameter('scale',sqrt(2)/2);
-            p.addParameter('stats',[],@isstruct);
-            p.parse(parms{:});
+            
+            expectedTail = {'both','left','right'};
+
+            
+            P=inputParser;
+            P.addParameter('alpha',0.05);
+            P.addParameter('tail','both',@(x) any(validatestring(x,expectedTail)));
+            P.addParameter('scale',sqrt(2)/2);
+            P.addParameter('stats',[],@isstruct);
+            P.parse(parms{:});
+            opt = P.Results;
             
             
-            if isempty(p.Results.stats)
+            if isempty(opt.stats)
                 % Calculate frequentist from the X and Y data
-                tail = p.Results.tail;
-                [~,pValue,CI,stats] = ttest(X,Y,'alpha',p.Results.alpha,'tail',tail);
+                [~,pValue,CI,stats] = ttest(X,Y,'alpha',opt.alpha,'tail',opt.tail);
                 T = stats.tstat;
                 df = stats.df;
                 N = numel(X);
             else
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
-                T = p.Results.stats.tstat;
-                df = p.Results.stats.df;
-                pValue = p.Results.stats.pValue;
-                tail  = p.Results.stats.tail;
-                N = p.Results.stats.N;
+                T = opt.stats.tstat;
+                df = opt.stats.df;
+                pValue = opt.stats.pValue;
+                tail  = opt.stats.tail;
+                N = opt.stats.N;
                 CI = [NaN NaN];
             end
             
             % Use the formula from Rouder 2009
-            r = p.Results.scale;
+            r = opt.scale;
             numerator = (1+T.^2/df).^(-(df+1)/2);
             fun  = @(g) ( ((1+N.*g.*r.^2).^-0.5) .* (1+T.^2./((1+N.*g.*r.^2).*df)).^(-(df+1)/2) .* (2*pi).^(-1/2) .* g.^(-3/2).*exp(-1./(2*g))  );
             % Integrate over g
