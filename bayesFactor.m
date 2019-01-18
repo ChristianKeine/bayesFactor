@@ -1,13 +1,14 @@
 classdef bayesFactor < handle
     % A class to perform Bayes Factor statistical analysis to quantify
     % evidence in favor or against a hypothesis.
-    % For background see:
+    % For background see "Rouder, J. N., Speckman, P. L., Sun, D., Morey,
+    % R. D., & Iverson, G. (2009). Bayesian t tests for accepting and rejecting the null hypothesis. Psychonomic Bulletin and Review, 16(2), 225–237. https://doi.org/10.3758/PBR.16.2.225"
     %
     % The mathemetical underpinning for these routines is provided in
     %
     %
     % Implementation notes:
-    %  The class currently does not store data, only some default parameers
+    %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
     % BK - 2018
     
@@ -575,7 +576,7 @@ classdef bayesFactor < handle
                 case 'both'
                     % Nothing to do
                 case {'left','right'}
-                    % Adjust the BF using hte p-value as an estimate for the posterior
+                    % Adjust the BF using the p-value as an estimate for the posterior
                     % (Morey & Wagenmakers, Stats and Prob Letts. 92 (2014):121-124.
                     bf10 = 2*(1-pValue)*bf10;
             end
