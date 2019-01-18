@@ -11,7 +11,7 @@ classdef bayesFactor < handle
     %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
     % BK - 2018
-    % LINK TO ORIGINAL IMPLEMENTATION BY 
+    % LINK TO ORIGINAL MATLAB IMPLEMENTATION: https://github.com/klabhub/bayesFactor 
     
     
     properties (SetAccess = public, GetAccess =public)
