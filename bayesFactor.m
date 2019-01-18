@@ -479,7 +479,7 @@ classdef bayesFactor < handle
                 statsForBf.N = nX*nY/(nX+nY);
                 statsForBf.df = stats.df;
                 statsForBf.tail = tail;
-            else % does not seem to work, since the stat-output from ttest2 does not provide information about N and tail used
+            else 
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
                 statsForBf = p.Results.stats;
