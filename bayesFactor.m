@@ -1,8 +1,8 @@
 classdef bayesFactor < handle
     % A class to perform Bayes Factor statistical analysis to quantify
     % evidence in favor or against a hypothesis.
-    % For background see 
-   % "Rouder, J. N., Speckman, P. L., Sun, D., Morey, R. D., & Iverson, G. (2009). Bayesian t tests for accepting and rejecting the null hypothesis. Psychonomic Bulletin and Review, 16(2), 225–237. https://doi.org/10.3758/PBR.16.2.225"
+    % For background see
+    % "Rouder, J. N., Speckman, P. L., Sun, D., Morey, R. D., & Iverson, G. (2009). Bayesian t tests for accepting and rejecting the null hypothesis. Psychonomic Bulletin and Review, 16(2), 225–237. https://doi.org/10.3758/PBR.16.2.225"
     %
     % The mathemetical underpinning for these routines is provided in
     %
@@ -11,7 +11,7 @@ classdef bayesFactor < handle
     %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
     % BK - 2018
-    % LINK TO ORIGINAL MATLAB IMPLEMENTATION: https://github.com/klabhub/bayesFactor 
+    % LINK TO ORIGINAL MATLAB IMPLEMENTATION: https://github.com/klabhub/bayesFactor
     
     
     properties (SetAccess = public, GetAccess =public)
@@ -79,7 +79,7 @@ classdef bayesFactor < handle
             mainEffects  =f.TermNames(isMain)';
             isInteraction= cellfun(@(x) (contains(x,':')),f.TermNames);
             interactions = f.TermNames(isInteraction)';
-                response = f.ResponseName;
+            response = f.ResponseName;
             nrMainEffects =numel(mainEffects);
             nrInteractions = numel(interactions);
             allTerms = cat(2,mainEffects,interactions);
@@ -132,7 +132,7 @@ classdef bayesFactor < handle
                 %thisX = thisX -mean(thisX,2);
                 designMatrix{nrMainEffects+i} = thisX;
             end
-                   
+            
             %% Assign groups of effects to use the same prior on effect size.
             soFar  =0;
             if isempty(sharedPriors)
@@ -154,7 +154,7 @@ classdef bayesFactor < handle
             
             if nargout>1
                 % Traditional
-                model  = fitlm(tbl,formula);              
+                model  = fitlm(tbl,formula);
             end
         end
         
@@ -221,7 +221,7 @@ classdef bayesFactor < handle
             integrand = @(varargin) (bayesFactor.rouderS(cat(1,varargin{:}),y,X,sharedPriors).*prod(prior(cat(1,varargin{:})),1));
             nrDims = numel(sharedPriors);
             if nrDims>= o.nDimsForMC
-                % Use MC Sampling to calculate the integral 
+                % Use MC Sampling to calculate the integral
                 bf10 = o.mcIntegral(integrand,prior,nrDims);
             else
                 switch (nrDims)
@@ -234,7 +234,7 @@ classdef bayesFactor < handle
                 end
             end
         end
-
+        
     end
     
     %% Helper functions
@@ -471,7 +471,7 @@ classdef bayesFactor < handle
             opt = P.Results;
             opt.vartype = validatestring(opt.vartype,expectedVarTypes);
             opt.tail = validatestring(opt.tail,expectedTail);
-
+            
             
             
             if isempty(opt.stats)
@@ -484,17 +484,17 @@ classdef bayesFactor < handle
                 statsForBf.N = nX*nY/(nX+nY);
                 statsForBf.df = stats.df;
                 statsForBf.tail = opt.tail;
-            else 
+            else
                 % User specified outcome of frequentist test (the builtin ttest), calculate BF from T and
                 % df.
                 statsForBf = opt.stats;
                 statsForBf.tail = opt.tail;
-            end            
+            end
             bf10 = bayesFactor.ttest('stats',statsForBf,'scale',opt.scale);
         end
         
         
- %%       
+        %%
         function [bf10,pValue,CI,stats] = ttest(X,varargin)
             % function [bf10,p,CI,stats] = ttest(X,Y,varargin)  - paired
             % function [bf10,p,CI,stats] = ttest(X,varargin)    - one sample
@@ -543,7 +543,7 @@ classdef bayesFactor < handle
             end
             
             expectedTail = {'both','left','right'};
-
+            
             
             P=inputParser;
             P.addParameter('alpha',0.05);
@@ -615,7 +615,7 @@ classdef bayesFactor < handle
             
         end
         
- %%       
+        %%
         function [bf10,r,p] = corr(arg1,arg2)
             % Calculate the Bayes Factor for Pearson correlation between two
             % variables.
@@ -649,10 +649,124 @@ classdef bayesFactor < handle
                 p = 2*tcdf(-abs(t),n-2);
             end
         end
+        
+        function [bf10,r,p] = Wilcox(x,y)
+            Results = bayesFactor.rankSumGibbsSampler(x,y, 1000, 1, 10);
+            
+        end
     end
-    
+        
+        
+       methods (Static, Access = private)
+        %%
+        function Results = rankSumGibbsSampler(xVals,yVals, nSamples, cauchyPriorScale, nGibbsIter)
+            
+            n1 = numel(xVals);
+            n2 = numel(yVals);
+            
+            allRanks = tiedrank([xVals(:);yVals(:)]);
+            xRanks = allRanks(1:n1);
+            yRanks = allRanks((n1+1):(n1+n2));
+            
+            currentVals = sort(randn(n1+n2,1));
+            currentVals = currentVals(allRanks);
+            
+            deltaSamples = zeros(nSamples,1);
+            gSamples = zeros(nSamples,1);
+            sampledX = NaN(nSamples,n1);
+            sampledY = NaN(nSamples,n2);
+            
+            oldDeltaProp = 0;
+            
+            for j=1:nSamples
+                for i=1:n1+n2
+                    currentRank = allRanks(i);
+                    [under,upper] = bayesFactor.upperLowerTruncation(allRanks,currentVals,currentRank);
+                    if i<=n1
+                        oldDeltaProp = -0.5*oldDeltaProp;
+                    else
+                        oldDeltaProp = 0.5*oldDeltaProp;
+                        
+                    end
+                    
+                    currentVals(i) = bayesFactor.myTruncNormSim(under,upper,oldDeltaProp,1);
+                end
+                
+                
+                xVals = currentVals(1:n1);
+                yVals = currentVals((n1+1):(n1+n2));
+                
+                [delta,mu,g] = bayesFactor.sampleGibbsTwoSample(xVals,yVals,nGibbsIter,cauchyPriorScale);
+                
+                
+                deltaSamples(j) = delta;
+                oldDeltaProp = delta;
+                gSamples(j) = mu;
+            end
+            sampledX(j,:) = xVals;
+            sampledY(j,:) = yVals;
+            
+            Results = struct('deltaSamples',deltaSamples,'gSamples', gSamples,'sampledX',sampledX,'sampledY',sampledY);
+            
+            
+        end
+        
+        
+        function [delta, mu, g] = sampleGibbsTwoSample(x,y,nIter,scale)
+            
+            meanx = mean(x);
+            meany = mean(y);
+            n1 = numel(x);
+            n2 = numel(y);
+            sigmaSq = 1;
+            g = 1;
+            
+            for i=1:nIter
+                varMu = (4*g*sigmaSq)/(4+g*(n1+n2));
+                meanMu = (2 * g * (n2 * meany - n1 * meanx)) / ((g * (n1 + n2) + 4));
+                mu = normrnd(meanMu, sqrt(varMu));
+                
+                betaG = (mu^2 + sigmaSq * scale^2)/(2*sigmaSq);
+                g = 1/gamrnd(1,betaG);
+                
+                delta = mu/sqrt(sigmaSq);
+                
+            end
+            
+        end
+        
+        
+        %%
+        function [under,upper] = upperLowerTruncation(ranks,values,currentRank)
+            
+            if currentRank == min(ranks)
+                under = -Inf;
+            else
+                under = max(values(ranks<currentRank));
+            end
+            
+            if currentRank == max(ranks)
+                upper = Inf;
+            else
+                upper = min(values(ranks>currentRank));
+            end
+            
+            
+        end
+        %%
+        function mySample = myTruncNormSim(lBound,uBound,mu,sd)
+            lBoundUni = normcdf(lBound,mu,sd); %pnorm in R
+            uBoundUni = normcdf(uBound,mu,sd);
+            mySample = norminv((uBoundUni-lBoundUni).*rand(1)+lBoundUni);% qnorm and runif in R
+            
+        end
+        
+        
+        
+    end
+
     %% Hide some of the handle class member functions for ease of use.
-    methods (Hidden=true)
+    methods (Hidden=false)
         function notify(~)
         end
         function addlistener(~)
@@ -662,6 +776,10 @@ classdef bayesFactor < handle
         function findprop(~)
         end
         function listener(~)
-        end        
+        end
+        
+        %%
+        
+        
     end
 end
