@@ -650,20 +650,25 @@ classdef bayesFactor < handle
             end
         end
         %%
-        function [bf10,r,p] = Wilcox(x,y,varargin)
+        function [bf10,pValue,stats] = Wilcox(x,y,varargin)
+            
+            
             
             P = inputParser;
             P.addOptional('cauchyPriorScale',sqrt(2)/2,@(x) isnumeric(x) & x>0)
             P.addOptional('nSamples',100,@(x) isnumeric(x) & x>10)
             P.addOptional('nGibbsIterations',10,@(x) isnumeric(x) & x>1)
-           % P.addOptional('onesided',false,@(x) islogical(x))
+            P.addOptional('tail','both',@ischar || @isstring)
             
             P.parse(varargin{:});
             opt = P.Results;
             
             gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations);
             
-            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,False);
+            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,opt.onesided);
+            
+            % COMPUTE TRADITIONAL WILCOX
+            [pValue,~,stats] = ranksum(x,y);
             
             
         end
@@ -672,24 +677,36 @@ classdef bayesFactor < handle
     
     methods (Static, Access = private)
         
-        function bf01 = computeBayesFactorWilcoxon(deltaSamples,scale,onesided)
+        function bf01 = computeBayesFactorWilcoxon(deltaSamples,scale,tail)
             
             % get posterior density
+            [postDens,xi] = ksdensity(deltaSamples);
             densZeroPoint = ksdensity(deltaSamples(:),0); % logspline used in R/JASP
             
             % For testing
             a = 0;
-            priorDenseZeroPoint = scale./(pi*(scale.^2 + (0-a).^2));
+            priorDensZeroPoint = scale./(pi*(scale.^2 + (0-a).^2));
+            
+            switch tail
+                case 'left'
+                    corFactorPosterior = trapz(xi(xi<0),postDens(xi<0));
+                    onesided = 1;
+                case 'right'
+                    corFactorPosterior =  1-trapz(xi(xi<0),postDens(xi<0));
+                    onesided = 1;
+            end
+            
+            corFactorPrior = 0.5 + atan((0-a)./scale)/pi;
             
             
-%             if onesided
-%                 bf01 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
-%             else
-                bf01 = priorDenseZeroPoint./densZeroPoint;
-%             end
+            if onesided
+                bf01 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
+            else
+                bf01 = priorDensZeroPoint./densZeroPoint;
+                
+            end
+            
         end
-        
-        
         
         
         %%
@@ -699,8 +716,8 @@ classdef bayesFactor < handle
             n2 = numel(yVals);
             
             allRanks = tiedrank([xVals(:);yVals(:)]);
-%             xRanks = allRanks(1:n1);
-%             yRanks = allRanks((n1+1):(n1+n2));
+            %             xRanks = allRanks(1:n1);
+            %             yRanks = allRanks((n1+1):(n1+n2));
             
             allVals = sort(randn(n1+n2,1));
             allVals = allVals(allRanks);
@@ -711,7 +728,7 @@ classdef bayesFactor < handle
             sampledY = NaN(nSamples,n2);
             
             oldDeltaProp = 0;
-            oldMuProp = 0;
+            %oldMuProp = 0;
             
             
             for j=1:nSamples
