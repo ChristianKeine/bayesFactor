@@ -650,7 +650,7 @@ classdef bayesFactor < handle
             end
         end
         %%
-        function [bf10,r,p] = Wilcox(x,y,varargin)
+        function [bf10,pValue,stats] = Wilcox(x,y,varargin)
             
             P = inputParser;
             P.addOptional('cauchyPriorScale',sqrt(2)/2,@(x) isnumeric(x) & x>0)
@@ -664,6 +664,9 @@ classdef bayesFactor < handle
             gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations);
             
             bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,false);
+            
+            % COMPUTE TRADITIONAL WILCOX
+            [pValue,~,stats] = ranksum(x,y);
             
             
         end
