@@ -652,8 +652,8 @@ classdef bayesFactor < handle
         %%
         function [bf10,pValue,stats] = Wilcox(x,y,varargin)
             
-           expectedTail = {'both','left','right'};
-
+            expectedTail = {'both','left','right'};
+            
             
             P = inputParser;
             P.addOptional('cauchyPriorScale',sqrt(2)/2,@(x) isnumeric(x) & x>0)
@@ -679,7 +679,7 @@ classdef bayesFactor < handle
     
     methods (Static, Access = private)
         
-        function bf01 = computeBayesFactorWilcoxon(deltaSamples,scale,tail)
+        function bf10 = computeBayesFactorWilcoxon(deltaSamples,scale,tail)
             
             % get posterior density
             [postDens,xi] = ksdensity(deltaSamples);
@@ -689,26 +689,24 @@ classdef bayesFactor < handle
             a = 0;
             priorDensZeroPoint = scale./(pi*(scale.^2 + (0-a).^2));
             
+            corFactorPrior = 0.5 + atan((0-a)./scale)/pi;
+            
             switch tail
                 case 'left'
                     corFactorPosterior = trapz(xi(xi<0),postDens(xi<0));
-                    onesided = 1;
+                    bf10 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
+                    
                 case 'right'
                     corFactorPosterior =  1-trapz(xi(xi<0),postDens(xi<0));
-                    onesided = 1;
+                    bf10 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
+                    
                 otherwise
-                    onesided = 0;
+                    bf10 = priorDensZeroPoint./densZeroPoint;
+                    
             end
             
-            corFactorPrior = 0.5 + atan((0-a)./scale)/pi;
             
             
-            if onesided
-                bf01 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
-            else
-                bf01 = priorDensZeroPoint./densZeroPoint;
-                
-            end
             
         end
         
