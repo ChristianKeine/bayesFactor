@@ -663,7 +663,7 @@ classdef bayesFactor < handle
             
             gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations);
             
-            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,false);
+            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,False);
             
             
         end
@@ -711,7 +711,7 @@ classdef bayesFactor < handle
             sampledY = NaN(nSamples,n2);
             
             oldDeltaProp = 0;
-            %oldMuProp = 0;
+            oldMuProp = 0;
             
             
             for j=1:nSamples
