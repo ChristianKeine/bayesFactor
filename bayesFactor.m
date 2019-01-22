@@ -660,12 +660,13 @@ classdef bayesFactor < handle
             P.addOptional('nSamples',100,@(x) isnumeric(x) & x>10)
             P.addOptional('nGibbsIterations',10,@(x) isnumeric(x) & x>1)
             P.addOptional('tail','both',@(x) any(validatestring(x,expectedTail)))
-            
+            P.addOptional('nBurnin',50,@(x) isnumeric(x) & x>0)
+
             P.parse(varargin{:});
             opt = P.Results;
             opt.tail = validatestring(opt.tail,expectedTail);
             
-            gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations);
+            gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations, opt.nBurnin);
             
             bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,opt.tail);
             
@@ -712,7 +713,7 @@ classdef bayesFactor < handle
         
         
         %%
-        function gibbsResults = rankSumGibbsSampler(xVals,yVals, nSamples, cauchyPriorScale, nGibbsIter)
+        function gibbsResults = rankSumGibbsSampler(xVals,yVals, nSamples, cauchyPriorScale, nGibbsIter, nBurnin)
             
             n1 = numel(xVals);
             n2 = numel(yVals);
@@ -724,16 +725,16 @@ classdef bayesFactor < handle
             allVals = sort(randn(n1+n2,1));
             allVals = allVals(allRanks);
             
-            deltaSamples = zeros(nSamples,1);
-            gSamples = zeros(nSamples,1);
-            sampledX = NaN(nSamples,n1);
-            sampledY = NaN(nSamples,n2);
+            deltaSamples = zeros(nSamples+nBurnin,1);
+            gSamples = zeros(nSamples+nBurnin,1);
+            sampledX = NaN(nSamples+nBurnin,n1);
+            sampledY = NaN(nSamples+nBurnin,n2);
             
             oldDeltaProp = 0;
             %oldMuProp = 0;
             
             
-            for j=1:nSamples
+            for j=1:nSamples+nBurnin
                 for i=randperm(n1+n2)
                     currentRank = allRanks(i);
                     [under,upper] = bayesFactor.upperLowerTruncation(allRanks,allVals,currentRank);
@@ -761,6 +762,12 @@ classdef bayesFactor < handle
             sampledX(j,:) = xVals;
             sampledY(j,:) = yVals;
             
+            
+            deltaSamples = deltaSamples(nBurnin+1:end);
+            gSamples = deltaSamples(nBurnin+1:end);
+            sampledX = sampledX(nBurnin+1:end,:);
+            sampledY = sampledY(nBurnin+1:end,:);
+
             gibbsResults = struct('deltaSamples',-1*deltaSamples,'gSamples', gSamples,'sampledX',sampledX,'sampledY',sampledY);
             
             

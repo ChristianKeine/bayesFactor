@@ -652,20 +652,22 @@ classdef bayesFactor < handle
         %%
         function [bf10,pValue,stats] = Wilcox(x,y,varargin)
             
+            expectedTail = {'both','left','right'};
             
             
             P = inputParser;
             P.addOptional('cauchyPriorScale',sqrt(2)/2,@(x) isnumeric(x) & x>0)
             P.addOptional('nSamples',100,@(x) isnumeric(x) & x>10)
             P.addOptional('nGibbsIterations',10,@(x) isnumeric(x) & x>1)
-            P.addOptional('tail','both',@ischar || @isstring)
+            P.addOptional('tail','both',@(x) any(validatestring(x,expectedTail)))
             
             P.parse(varargin{:});
             opt = P.Results;
+            opt.tail = validatestring(opt.tail,expectedTail);
             
             gibbsResults = bayesFactor.rankSumGibbsSampler(x,y, opt.nSamples, opt.cauchyPriorScale, opt.nGibbsIterations);
             
-            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,opt.onesided);
+            bf10 = bayesFactor.computeBayesFactorWilcoxon(gibbsResults.deltaSamples,opt.cauchyPriorScale,opt.tail);
             
             % COMPUTE TRADITIONAL WILCOX
             [pValue,~,stats] = ranksum(x,y);
@@ -677,7 +679,7 @@ classdef bayesFactor < handle
     
     methods (Static, Access = private)
         
-        function bf01 = computeBayesFactorWilcoxon(deltaSamples,scale,tail)
+        function bf10 = computeBayesFactorWilcoxon(deltaSamples,scale,tail)
             
             % get posterior density
             [postDens,xi] = ksdensity(deltaSamples);
@@ -687,24 +689,24 @@ classdef bayesFactor < handle
             a = 0;
             priorDensZeroPoint = scale./(pi*(scale.^2 + (0-a).^2));
             
+            corFactorPrior = 0.5 + atan((0-a)./scale)/pi;
+            
             switch tail
                 case 'left'
                     corFactorPosterior = trapz(xi(xi<0),postDens(xi<0));
-                    onesided = 1;
+                    bf10 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
+                    
                 case 'right'
                     corFactorPosterior =  1-trapz(xi(xi<0),postDens(xi<0));
-                    onesided = 1;
+                    bf10 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
+                    
+                otherwise
+                    bf10 = priorDensZeroPoint./densZeroPoint;
+                    
             end
             
-            corFactorPrior = 0.5 + atan((0-a)./scale)/pi;
             
             
-            if onesided
-                bf01 =  (priorDensZeroPoint/corFactorPrior)./(densZeroPoint/corFactorPosterior);
-            else
-                bf01 = priorDensZeroPoint./densZeroPoint;
-                
-            end
             
         end
         
@@ -759,6 +761,10 @@ classdef bayesFactor < handle
             sampledX(j,:) = xVals;
             sampledY(j,:) = yVals;
             
+            
+            deltaSamples = deltaSamples(nBurnin+1:end);
+            gSamples = deltaSamples(nBurnin+1:end);
+
             gibbsResults = struct('deltaSamples',-1*deltaSamples,'gSamples', gSamples,'sampledX',sampledX,'sampledY',sampledY);
             
             
