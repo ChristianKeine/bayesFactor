@@ -7,6 +7,7 @@ classdef bayesFactor < handle
     % The mathemetical underpinning for these routines is provided in
     %
     %
+    %
     % Implementation notes:
     %  The class currently does not store data, only some default parameters
     %  that are used in different contexts.
@@ -827,7 +828,7 @@ classdef bayesFactor < handle
     end
     
     %% Hide some of the handle class member functions for ease of use.
-    methods (Hidden=false)
+    methods (Hidden=true)
         function notify(~)
         end
         function addlistener(~)
